@@ -1,0 +1,257 @@
+Se trata de utilizar JavaCC para obtener un compilador que traduzca un 
+lenguaje de alto nivel a código de máquina de pila abstracta. Básicamente
+lo mismo que hace el analizador recursivo descendente en C explicado en clase.
+
+El lenguaje de alto nivel es muy sencillo. No tiene declaración de tipos.
+Y el único tipo que permite es el tipo entero. En las condiciones de las
+instrucciones if y while el valor 0 se interpreta como falso y cualquier 
+otro valor como cierto.
+
+Además de las asignaciones normales (<:), tiene asignación de incremento (+=),
+decremento (-=), producto (*=) y división (/=), para lo que se utiliza el valor
+resultado de evaluar la expresión.
+
+Tiene dos tipos de bucles, un 'do...while' y un 'for'. En el for hay un
+identificar al que se le van asignando sucesivamente los valores entre el 
+resultado de evaluar la expresión 'from' hasta llevar al valor 'to'.
+El incremento es el valor indicado con 'by', o si no si indica ninguno, por 
+defecto es 1.
+
+Los comentarios son en línea comenzando con el carácter '#'.
+
+Además de las instrucciones vistas en el vídeo para la máquina de pila
+abstracta, vamos a suponer la existencia de una orden adicional, 'read var',
+que lee la entrada de usuario y la almacena con la variable 'var'.
+
+El terminal 'NUM' representa un número entero e 'ID' un identificador/variable
+del lenguaje (pueden contener números, letras y guiones bajos, pero no pueden
+comenzar por número).
+
+Debe ser capaz de leer por entrada estándar (teclado) y por un fichero
+que se le pase por argumento.
+
+
+La gramática del lenguaje es la siguiente:
+
+   stmts -> stmt ';' stmts
+         |  stmt
+    stmt -> loop
+         |  cond
+         |  assig
+         |  io
+    loop -> 'do' stmts 'while' '(' expr ')'
+         |  'for' '(' ID 'from' expr 'to' NUM ')' '{' stmts '}'
+         |  'for' '(' ID 'from' expr 'to' NUM 'by' NUM ')' '{' stmts '}'
+    cond -> 'if' '(' expr ')' '{' stmts '}'
+         |  'if' '(' expr ')' '{' stmts '}' 'else' '{' stmts '}'
+      io -> 'print' expr
+         |  'read' ID
+   assig -> ID '<:' expr
+         |  ID '+=' expr
+         |  ID '-=' expr
+         |  ID '*=' expr
+         |  ID '/=' expr
+    expr -> expr '+' mult
+         |  expr '-' mult 
+         |  mult
+    mult -> mult '*' val
+         |  mult '/' val
+         |  val
+     val -> NUM | ID | '(' expr ')'
+
+NOTA: Podría ser necesaria alguna transformación en la la gramática (eliminación
+      de recursividad, factorización...) antes de empezar a programar en JavaCC.
+      De hecho, la transformación también podría ser la utilización de los
+      operadores avanzados de JavaCC, como: '?', '*'...
+
+
+Ante una entrada como:
+
+Var <: 5 * 25;    # la variable var toma el valor de 5 * 25
+read v;           # Leer un valor para la variable v
+do                # bucle para decrementar var
+  Var += 2*v 
+while (Var);
+if (5 - Var)      # Condicional
+{                 # Cuerpo con varias instrucciones separadas por ; 
+  v -= 1;
+  print v * 3     # Imprimir valor expresión
+} else {
+  print Var + 10sdsds
+}
+
+
+Debería mostrar (excepto quizá el número de las etiquetas):
+
+    valori Var
+    mete 5
+    mete 25
+    mul
+    asigna
+    read v
+LBL0:
+    valori Var
+    valord Var
+    mete 2
+    valord v
+    mul
+    add
+    asigna
+    valord Var
+    sifalsovea LBL1
+    vea LBL0
+LBL1:
+    mete 5
+    valord Var
+    sub
+    sifalsovea LBL2
+    valori v
+    valord v
+    mete 1
+    sub
+    asigna
+    valord v
+    mete 3
+    mul
+    print
+    vea LBL3
+LBL2:
+    valord Var
+    mete 10
+    add
+    print
+LBL3:
+'''
+
+
+
+Ante una entrada como:
+
+# Ejemplo de bucle do...while
+do
+  if (c - d) { print c }
+  else {print d}
+while (7 - 5 + a);
+
+# Ejemplo de bucles anidados
+do 
+  a -= 1;
+  do
+    b -= 2;
+    print a + b
+  while (b)
+while (a)
+
+
+Debería mostrar (excepto quizá el número de las etiquetas):
+
+
+LBL0:
+    valord c
+    valord d
+    sub
+    sifalsovea LBL2
+    valord c
+    print
+    vea LBL3
+LBL2:
+    valord d
+    print
+LBL3:
+    mete 7
+    mete 5
+    sub
+    valord a
+    add
+    sifalsovea LBL1
+    vea LBL0
+LBL1:
+LBL4:
+    valori a
+    valord a
+    mete 1
+    sub
+    asigna
+LBL6:
+    valori b
+    valord b
+    mete 2
+    sub
+    asigna
+    valord a
+    valord b
+    add
+    print
+    valord b
+    sifalsovea LBL7
+    vea LBL6
+LBL7:
+    valord a
+    sifalsovea LBL5
+    vea LBL4
+LBL5:
+
+
+
+Ante una entrada como:
+
+# Ejemplo de un for con incremento por defecto
+read v;
+for ( var from 2*v to 100 ) {
+  # Un condicional sin else
+  if (20-var) { print var}
+};
+# Ejemplo de un for con incremento explícito
+for ( var from v to 50 by 3 ) {
+  print 2 + var * 3
+}
+
+
+Debería mostrar (excepto quizá el número de las etiquetas):
+
+    read v
+    valori var
+    mete 2
+    valord v
+    mul
+    asigna
+LBL0:
+    mete 20
+    valord var
+    sub
+    sifalsovea LBL2
+    valord var
+    print
+LBL2:
+    valori var
+    valord var
+    mete 1
+    add
+    asigna
+    mete 100
+    valord var
+    sub
+    sifalsovea LBL1
+    vea LBL0
+LBL1:
+    valori var
+    valord v
+    asigna
+LBL3:
+    mete 2
+    valord var
+    mete 3
+    mul
+    add
+    print
+    valori var
+    valord var
+    mete 3
+    add
+    asigna
+    mete 50
+    valord var
+    sub
+    sifalsovea LBL4
+    vea LBL3
+LBL4:
